@@ -1,24 +1,45 @@
 using UnityEngine;
 
-public class PlayerKick : MonoBehaviour
+public class GoalKick : MonoBehaviour
 {
-    public float kickStrength = 10f;
+    [Header("Goal Target")]
+    public Transform targetGoal;
+
+    [Header("Kick Settings")]
+    public float kickSpeed = 12f;
+
+    [Range(0f, 1f)]
+    public float goalInfluence = 0.8f;
 
     private void OnCollisionEnter(Collision collision)
     {
-        FoosballBall ball =
-            collision.gameObject.GetComponent<FoosballBall>();
-
-        if (ball == null)
+        if (!collision.gameObject.CompareTag("Ball"))
             return;
 
-        Vector3 dir =
+        Rigidbody ballRb = collision.rigidbody;
+
+        if (ballRb == null)
+            return;
+
+        // Actual hit direction
+        Vector3 hitDirection =
             (collision.transform.position -
              transform.position).normalized;
 
-        ball.Kick(
-            dir,
-            kickStrength
-        );
+        // Goal direction
+        Vector3 goalDirection =
+            (targetGoal.position -
+             collision.transform.position).normalized;
+
+        // Blend toward goal
+        Vector3 finalDirection =
+            Vector3.Lerp(
+                hitDirection,
+                goalDirection,
+                goalInfluence
+            ).normalized;
+
+        ballRb.linearVelocity =
+            finalDirection * kickSpeed;
     }
 }

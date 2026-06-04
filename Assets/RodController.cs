@@ -15,13 +15,13 @@ public class RodController : MonoBehaviour
 
     private bool isDragging;
     private Vector3 lastMousePos;
+
     private float currentRotation;
+    private float previousRotation;
 
     private Vector3 initialEuler;
 
-    public float SpinVelocity { get; private set; }
-
-    private float previousRotation;
+    public float RotationSpeed { get; private set; }
 
     void Start()
     {
@@ -40,6 +40,7 @@ public class RodController : MonoBehaviour
     void OnMouseUp()
     {
         isDragging = false;
+        RotationSpeed = 0f;
     }
 
     void Update()
@@ -50,40 +51,36 @@ public class RodController : MonoBehaviour
         Vector3 currentMousePos = Input.mousePosition;
         Vector3 delta = currentMousePos - lastMousePos;
 
-        // Horizontal movement
+        // Horizontal rod movement
         Vector3 pos = transform.position;
         pos.x += delta.x * moveSensitivity;
         pos.x = Mathf.Clamp(pos.x, minX, maxX);
         transform.position = pos;
 
-        // Rotation
+        // Rod rotation
         currentRotation += delta.y * rotationSensitivity;
 
         if (rodVisual != null)
         {
             Vector3 euler = initialEuler;
 
-            // If your rod rotates on another axis, change x to y/z
+            // Change axis if required
             euler.x = initialEuler.x + currentRotation;
 
             rodVisual.localEulerAngles = euler;
         }
 
-        // Spin velocity
-        SpinVelocity =
-            (currentRotation - previousRotation) /
-            Mathf.Max(Time.deltaTime, 0.0001f);
+        // Rotation speed calculation
+        RotationSpeed =
+            Mathf.Abs(
+                Mathf.DeltaAngle(
+                    previousRotation,
+                    currentRotation
+                )
+            ) / Mathf.Max(Time.deltaTime, 0.0001f);
 
         previousRotation = currentRotation;
 
         lastMousePos = currentMousePos;
-    }
-
-    private void LateUpdate()
-    {
-        if (!isDragging)
-        {
-            SpinVelocity = 0f;
-        }
     }
 }

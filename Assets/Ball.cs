@@ -1,10 +1,8 @@
 using UnityEngine;
 
-public class FoosballBall : MonoBehaviour
+public class BallMinimumSpeed : MonoBehaviour
 {
-    [Header("Ball Settings")]
-    public float friction = 0.98f;
-    public float maxSpeed = 15f;
+    public float minimumSpeed = 2f;
 
     Rigidbody rb;
 
@@ -15,30 +13,19 @@ public class FoosballBall : MonoBehaviour
 
     void FixedUpdate()
     {
-        Vector3 velocity = rb.linearVelocity;
+        Vector3 vel = rb.linearVelocity;
 
-        // keep ball on table
-        velocity.y = 0;
-
-        // gradual slowdown
-        velocity *= friction;
-
-        // clamp speed
-        if (velocity.magnitude > maxSpeed)
+        if (vel.magnitude < minimumSpeed)
         {
-            velocity =
-                velocity.normalized * maxSpeed;
+            if (vel.magnitude < 0.01f)
+            {
+                vel = Random.insideUnitSphere;
+                vel.y = 0;
+                vel.Normalize();
+            }
+
+            rb.linearVelocity =
+                vel.normalized * minimumSpeed;
         }
-
-        rb.linearVelocity = velocity;
-    }
-
-    public void Kick(
-        Vector3 direction,
-        float strength
-    )
-    {
-        rb.linearVelocity =
-            direction.normalized * strength;
     }
 }
