@@ -8,13 +8,14 @@ public class RodController : MonoBehaviour
     [Header("Movement")]
     public float minX = -4f;
     public float maxX = 4f;
-    public float moveSensitivity = 0.02f;
+    public float moveSensitivity = 0.01f;
 
     [Header("Rotation")]
-    public float rotationSensitivity = 3f;
+    public float rotationSensitivity = 2f;
 
-    private bool isDragging;
-    private Vector3 lastMousePos;
+    private int controllingFingerId = -1;
+
+    private Vector2 lastTouchPosition;
 
     private float currentRotation;
     private float previousRotation;
@@ -23,64 +24,146 @@ public class RodController : MonoBehaviour
 
     public float RotationSpeed { get; private set; }
 
+    private Camera mainCamera;
+
     void Start()
     {
+        mainCamera = Camera.main;
+
         if (rodVisual != null)
         {
             initialEuler = rodVisual.localEulerAngles;
         }
     }
 
-    void OnMouseDown()
-    {
-        isDragging = true;
-        lastMousePos = Input.mousePosition;
-    }
-
-    void OnMouseUp()
-    {
-        isDragging = false;
-        RotationSpeed = 0f;
-    }
-
     void Update()
     {
-        if (!isDragging)
-            return;
+        HandleTouches();
+    }
 
-        Vector3 currentMousePos = Input.mousePosition;
-        Vector3 delta = currentMousePos - lastMousePos;
-
-        // Horizontal rod movement
-        Vector3 pos = transform.position;
-        pos.x += delta.x * moveSensitivity;
-        pos.x = Mathf.Clamp(pos.x, minX, maxX);
-        transform.position = pos;
-
-        // Rod rotation
-        currentRotation += delta.y * rotationSensitivity;
-
-        if (rodVisual != null)
+    void HandleTouches()
+    {
+        // Find a finger if we don't currently own one
+        if (controllingFingerId == -1)
         {
-            Vector3 euler = initialEuler;
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                Touch touch = Input.GetTouch(i);
 
-            // Change axis if required
-            euler.x = initialEuler.x + currentRotation;
+                if (touch.phase != TouchPhase.Began)
+                    continue;
 
-            rodVisual.localEulerAngles = euler;
+                Ray ray =
+                    mainCamera.ScreenPointToRay(
+                        touch.position
+                    );
+
+                if (Physics.Raycast(ray, out RaycastHit hit))
+                {
+                    RodController rod =
+                        hit.collider.GetComponentInParent<RodController>();
+
+                    if (rod == this)
+                    {
+                        controllingFingerId = touch.fingerId;
+                        lastTouchPosition = touch.position;
+
+                        Debug.Log(
+                            $"{name} claimed finger {controllingFingerId}"
+                        );
+
+                        break;
+                    }
+                }
+            }
+
+            return;
         }
 
-        // Rotation speed calculation
-        RotationSpeed =
-            Mathf.Abs(
-                Mathf.DeltaAngle(
-                    previousRotation,
-                    currentRotation
-                )
-            ) / Mathf.Max(Time.deltaTime, 0.0001f);
+        // Update the finger currently controlling this rod
+        bool fingerFound = false;
 
-        previousRotation = currentRotation;
+        for (int i = 0; i < Input.touchCount; i++)
+        {
+            Touch touch = Input.GetTouch(i);
 
-        lastMousePos = currentMousePos;
+            if (touch.fingerId != controllingFingerId)
+                continue;
+
+            fingerFound = true;
+
+            if (touch.phase == TouchPhase.Ended ||
+                touch.phase == TouchPhase.Canceled)
+            {
+                Debug.Log(
+                    $"{name} released finger {controllingFingerId}"
+                );
+
+                controllingFingerId = -1;
+                RotationSpeed = 0f;
+
+                return;
+            }
+
+            Vector2 delta =
+                touch.position -
+                lastTouchPosition;
+
+            // Horizontal movement
+            Vector3 pos = transform.position;
+
+            pos.x += delta.x * moveSensitivity;
+
+            pos.x = Mathf.Clamp(
+                pos.x,
+                minX,
+                maxX
+            );
+
+            transform.position = pos;
+
+            // Vertical rotation
+            currentRotation +=
+                delta.y * rotationSensitivity;
+
+            if (rodVisual != null)
+            {
+                Vector3 euler = initialEuler;
+
+                // Change axis if needed
+                euler.x =
+                    initialEuler.x +
+                    currentRotation;
+
+                rodVisual.localEulerAngles =
+                    euler;
+            }
+
+            RotationSpeed =
+                Mathf.Abs(
+                    Mathf.DeltaAngle(
+                        previousRotation,
+                        currentRotation
+                    )
+                ) /
+                Mathf.Max(
+                    Time.deltaTime,
+                    0.0001f
+                );
+
+            previousRotation =
+                currentRotation;
+
+            lastTouchPosition =
+                touch.position;
+
+            break;
+        }
+
+        if (!fingerFound)
+        {
+            controllingFingerId = -1;
+            RotationSpeed = 0f;
+        }
     }
 }
