@@ -2,51 +2,23 @@ using UnityEngine;
 
 public class PlayerKick : MonoBehaviour
 {
-    [Header("Kick Settings")]
-    public float kickMultiplier = 1.5f;
-    public float maxKickSpeed = 50f;
-    public float minSpinSpeed = 25f;
-
-    private RodController rod;
-
-    void Start()
-    {
-        rod = GetComponentInParent<RodController>();
-    }
+    public float kickStrength = 10f;
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (!collision.gameObject.CompareTag("Ball"))
+        FoosballBall ball =
+            collision.gameObject.GetComponent<FoosballBall>();
+
+        if (ball == null)
             return;
 
-        if (rod == null)
-            return;
+        Vector3 dir =
+            (collision.transform.position -
+             transform.position).normalized;
 
-        Rigidbody ballRb = collision.rigidbody;
-
-        if (ballRb == null)
-            return;
-
-        float spinSpeed = rod.CurrentSpinSpeed;
-
-        if (spinSpeed < minSpinSpeed)
-            return;
-
-        Vector3 kickDirection =
-            (collision.transform.position - transform.position).normalized;
-
-        float kickSpeed =
-            Mathf.Clamp(
-                spinSpeed * kickMultiplier,
-                0f,
-                maxKickSpeed
-            );
-
-        // Add speed to existing velocity
-        ballRb.linearVelocity += kickDirection * kickSpeed;
-
-        Debug.Log(
-            $"Kick Speed: {kickSpeed:F2} | Rod Spin: {spinSpeed:F2}"
+        ball.Kick(
+            dir,
+            kickStrength
         );
     }
 }

@@ -19,7 +19,7 @@ public class RodController : MonoBehaviour
 
     private Vector3 initialEuler;
 
-    public float CurrentSpinSpeed { get; private set; }
+    public float SpinVelocity { get; private set; }
 
     private float previousRotation;
 
@@ -63,19 +63,27 @@ public class RodController : MonoBehaviour
         {
             Vector3 euler = initialEuler;
 
-            // CHANGE THIS AXIS IF NEEDED
+            // If your rod rotates on another axis, change x to y/z
             euler.x = initialEuler.x + currentRotation;
 
             rodVisual.localEulerAngles = euler;
         }
 
-        // Track spin speed
-        CurrentSpinSpeed =
-            Mathf.Abs(currentRotation - previousRotation) /
+        // Spin velocity
+        SpinVelocity =
+            (currentRotation - previousRotation) /
             Mathf.Max(Time.deltaTime, 0.0001f);
 
         previousRotation = currentRotation;
 
         lastMousePos = currentMousePos;
+    }
+
+    private void LateUpdate()
+    {
+        if (!isDragging)
+        {
+            SpinVelocity = 0f;
+        }
     }
 }

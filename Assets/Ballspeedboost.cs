@@ -1,12 +1,11 @@
 using UnityEngine;
 
-public class BallSpeedBoost : MonoBehaviour
+public class BallTravelBoost : MonoBehaviour
 {
-    [Header("Speed Settings")]
-    public float speedMultiplier = 1.02f;
-    public float maxSpeed = 20f;
+    public float travelMultiplier = 1.02f;
+    public float maxSpeed = 25f;
 
-    private Rigidbody rb;
+    Rigidbody rb;
 
     void Start()
     {
@@ -15,11 +14,9 @@ public class BallSpeedBoost : MonoBehaviour
 
     void FixedUpdate()
     {
-        float speed = rb.linearVelocity.magnitude;
-
-        if (speed > 0.1f)
+        if (rb.linearVelocity.magnitude > 0.1f)
         {
-            rb.linearVelocity *= speedMultiplier;
+            rb.linearVelocity *= travelMultiplier;
         }
 
         if (rb.linearVelocity.magnitude > maxSpeed)
